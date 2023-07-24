@@ -387,7 +387,7 @@ release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publis
 	$(KUSTOMIZE) build ./config/default > $(RELEASE_DIR)/rancher-turtles-components.yaml
 	$(MAKE) set-manifest-image \
 		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="$(RELEASE_DIR)/rancher-turtles-components.yaml
+		TARGET_RESOURCE="$(RELEASE_DIR)/rancher-turtles-components.yaml"
 
 	# # Add metadata to the release artifacts
 	# cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
