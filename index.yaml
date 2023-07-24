@@ -1,3 +1,28 @@
 apiVersion: v1
-entries: {}
-generated: "2023-07-13T15:47:17.475899+01:00"
+entries:
+  rancher-gke-operator:
+  - annotations:
+      catalog.cattle.io/auto-install: rancher-gke-operator-crd=match
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/hidden: "true"
+      catalog.cattle.io/kube-version: '>= 1.18.0-0'
+      catalog.cattle.io/namespace: cattle-system
+      catalog.cattle.io/os: linux
+      catalog.cattle.io/permits-os: linux,windows
+      catalog.cattle.io/provides-gvr: gkeclusterconfigs.gke.cattle.io/v1
+      catalog.cattle.io/rancher-version: '>= 2.6.0-alpha'
+      catalog.cattle.io/release-name: rancher-gke-operator
+      catalog.cattle.io/scope: management
+    apiVersion: v2
+    appVersion: "999"
+    created: "2023-07-24T06:39:30.470279877Z"
+    description: A Helm chart for provisioning GKE clusters
+    digest: e857af608e754233de9e37982a20b0eb7d59490de8874aa770f539c61e3337a7
+    home: https://github.com/rancher/gke-operator
+    name: rancher-gke-operator
+    sources:
+    - https://github.com/rancher/gke-operator
+    urls:
+    - https://github.com/Danil-Grigorev/rancher-turtles/releases/download/rancher-gke-operator-999/rancher-gke-operator-999.tgz
+    version: "999"
+generated: "2023-07-24T06:39:30.470291877Z"
