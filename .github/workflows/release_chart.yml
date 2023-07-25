@@ -25,9 +25,6 @@ jobs:
 
       - name: Package operator chart
         run: RELEASE_DIR=. make release-chart
-    
-      - name: Package operator chart
-        run: mv charts chart
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
