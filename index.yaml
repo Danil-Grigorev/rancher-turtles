@@ -27,6 +27,16 @@ entries:
     version: "999"
   rancher-turtles:
   - apiVersion: v2
+    appVersion: 1.2.18
+    created: "2023-07-28T13:46:02.306849852Z"
+    description: Rancher Turtles
+    digest: ccba0f7c709e03583e1e7b65450a54f1d5df3ff764af017456e5fc06dbc33acd
+    name: rancher-turtles
+    type: application
+    urls:
+    - https://github.com/Danil-Grigorev/rancher-turtles/releases/download/rancher-turtles-1.2.18/rancher-turtles-1.2.18.tgz
+    version: 1.2.18
+  - apiVersion: v2
     appVersion: 1.2.17
     created: "2023-07-28T13:42:18.88708697Z"
     description: Rancher Turtles
@@ -96,4 +106,4 @@ entries:
     urls:
     - https://github.com/Danil-Grigorev/rancher-turtles/releases/download/rancher-turtles-0.0.0/rancher-turtles-0.0.0.tgz
     version: 0.0.0
-generated: "2023-07-28T13:42:18.887266073Z"
+generated: "2023-07-28T13:46:02.307574354Z"
