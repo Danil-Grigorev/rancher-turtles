@@ -11,7 +11,6 @@ env:
   CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   RELEASE_DIR: .cr-release-packages
-  REPO: ${{ github.repository }}
 
 permissions:
   contents: write # Allow to create a release.
