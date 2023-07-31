@@ -9,6 +9,7 @@ env:
   TAG: ${{ github.ref_name }}
   REGISTRY: ghcr.io
   CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  RELEASE_DIR: .cr-release-packages
 
 permissions:
   contents: write # Allow to create a release.
@@ -68,7 +69,7 @@ jobs:
           mkdir -p .cr-index
   
       - name: Run chart-releaser upload
-        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes
+        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --release-notes-file=${RELEASE_DIR}/RELEASE_NOTES.md
 
       - name: Run chart-releaser index
         run: cr index --push
