@@ -395,38 +395,7 @@ $(CHART_PACKAGE_DIR):
 
 .PHONY: release
 release: clean-release $(RELEASE_DIR)  ## Builds and push container images using the latest git tag for the commit.
-	@if [ -z "${RELEASE_TAG}" ]; then echo "RELEASE_TAG is not set"; exit 1; fi
-	@if ! [ -z "$$(git status --porcelain)" ]; then echo "Your local git repository contains uncommitted changes, use git clean before proceeding."; exit 1; fi
-	git checkout "${RELEASE_TAG}"
-	# Set the manifest image to the production bucket.
-	$(MAKE) manifest-modification REGISTRY=$(PROD_REGISTRY)
-	$(MAKE) chart-manifest-modification REGISTRY=$(PROD_REGISTRY)
-	$(MAKE) release-manifests
 	$(MAKE) release-chart
-
-.PHONY: manifest-modification
-manifest-modification:
-	$(MAKE) set-manifest-image \
-		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
-	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
-
-.PHONY: chart-manifest-modification
-chart-manifest-modification:
-	$(MAKE) set-manifest-image \
-		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="./config/chart/manager_image_patch.yaml"
-	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent TARGET_RESOURCE="./config/chart/manager_pull_policy.yaml"
-
-.PHONY: release-manifests
-release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release
-	$(KUSTOMIZE) build ./config/default > $(RELEASE_DIR)/rancher-turtles-components.yaml
-	$(MAKE) set-manifest-image \
-		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="$(RELEASE_DIR)/rancher-turtles-components.yaml"
-
-	# # Add metadata to the release artifacts
-	# cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
 
 .PHONY: release-chart
 release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_DIR) $(CHART_PACKAGE_DIR) $(NOTES) ## Builds the chart to publish with a release
@@ -437,10 +406,6 @@ release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_DIR) $(CHART_PACKAGE_
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_DIR)/values.yaml
 	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
-
-.PHONY: update-helm-repo
-update-helm-repo:
-	./hack/update-helm-repo.sh $(RELEASE_TAG)
 
 ## --------------------------------------
 ## Cleanup / Verification
