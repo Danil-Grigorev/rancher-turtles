@@ -99,8 +99,8 @@ CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 
 # Relase
-RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
-PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) 2>/dev/null)
+RELEASE_TAG ?= $(shell git tag --sort=-v:refname --merged | head -1 2>/dev/null)
+PREVIOUS_TAG ?= $(shell git tag --sort=-v:refname --merged | head -2 | tail -1 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 CHART_DIR := charts/rancher-turtles
