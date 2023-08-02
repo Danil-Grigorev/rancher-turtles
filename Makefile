@@ -389,6 +389,7 @@ release-chart: chart-generate verify-release-chart-generate $(HELM) $(KUSTOMIZE)
 	sed -i'' -e 's@tag: .*@tag: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	echo "Generating release notes from ${PREVIOUS_TAG} to ${RELEASE_TAG}"
 	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
