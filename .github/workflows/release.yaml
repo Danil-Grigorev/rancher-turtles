@@ -6,6 +6,7 @@ on:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 env:
+  ORG: danil-grigorev
   TAG: ${{ github.ref_name }}
   REGISTRY: ghcr.io
   PROD_REGISTRY: ghcr.io
@@ -57,7 +58,7 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Package operator chart
-        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} make release
+        run: CHART_PACKAGE_DIR=${RELEASE_DIR} make release
 
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
