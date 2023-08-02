@@ -6,6 +6,7 @@ on:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 env:
+  ORG: danil-grigorev
   TAG: ${{ github.ref_name }}
   REGISTRY: ghcr.io
   PROD_REGISTRY: ghcr.io
