@@ -1,0 +1,32 @@
+name: release
+
+on:
+  push:
+    branches:
+    - '*'
+
+env:
+  NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
+  RANCHER_HOSTNAME: loosely-settling-swan.ngrok-free.app
+
+jobs:
+  build:
+    concurrency: test-e2e
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: setupGo
+      uses: actions/setup-go@v4
+      with:
+        go-version: '=1.20.7'
+    - name: Run e2e tests
+      run: make test-e2e
+    - name: Collect run artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: artifacts
+        path: _artifacts
