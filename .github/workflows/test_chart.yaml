@@ -54,4 +54,4 @@ jobs:
         run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
 
       - name: Run chart-testing (install)
-        run: ct install --charts out/charts/rancher-turtles/
+        run: ct install --namespace --charts out/charts/rancher-turtles/
