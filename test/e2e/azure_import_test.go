@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
@@ -38,68 +37,55 @@ import (
 )
 
 const (
-	capiClusterName      = "test2"
-	capiClusterNamespace = "fleet-default"
+	azureClusterName      = "test-azure"
+	azureClusterNamespace = "default"
 )
 
-var _ = Describe("Create and delete CAPI cluster functionality should work", func() {
+var _ = Describe("Import Azure CAPI cluster functionality should work", func() {
 	var (
 		rancherClusterHandler *rancher.ClusterHandler
 		rancherCluster        *rancher.Cluster
 		capiCluster           *clusterv1.Cluster
 		rancherClusterKey     client.ObjectKey
-		// Manually bumping fleet generation is required to force resources rollout
-		// after deleting them in the cluster by other means then fleet.
-		//
-		// TODO: Could be removed after https://github.com/rancher/fleet/issues/1551 is closed
-		fleetGeneration int
+		testCount             int
 	)
 
 	BeforeEach(func() {
+		testCount += 1
 		rancherClusterHandler = rancher.NewClusterHandler(ctx, bootstrapClusterProxy.GetClient())
 		capiCluster = &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Namespace: capiClusterNamespace,
-			Name:      capiClusterName,
+			Namespace: azureClusterNamespace,
+			Name:      azureClusterName,
 		}}
 		rancherCluster = &rancher.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Namespace: capiClusterNamespace,
-			Name:      fmt.Sprintf("%s-capi", capiClusterName),
+			Namespace: azureClusterNamespace,
+			Name:      fmt.Sprintf("%s-capi", azureClusterName),
 		}}
 		rancherClusterKey = client.ObjectKey{
 			Namespace: rancherCluster.Namespace,
 			Name:      rancherCluster.Name,
 		}
 
-		By("Creating a CAPI cluster with calico CNI")
+		By("Creating an Azure CAPI cluster with calico CNI")
 		Eventually(func() error {
-			fleetCAPI, err := envsubst.Eval(string(fleetCAPITestdata), func(_ string) string {
-				fleetGeneration += 1
-				return strconv.Itoa(fleetGeneration)
-			})
-			Expect(err).ToNot(HaveOccurred())
-			return bootstrapClusterProxy.Apply(ctx, []byte(fleetCAPI))
+			return bootstrapClusterProxy.Apply(ctx, azureCAPITestdata)
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).Should(Succeed())
-
-		By("Waiting for the CAPI cluster to appear")
-		Eventually(func() error {
-			return bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 	})
 
 	AfterEach(func() {
 		By("Dumping child cluster logs")
-		bootstrapClusterProxy.CollectWorkloadClusterLogs(ctx, capiCluster.Namespace, capiCluster.Name, filepath.Join(artifactFolder, "clusters", capiCluster.Name, strconv.Itoa(fleetGeneration)))
+		bootstrapClusterProxy.CollectWorkloadClusterLogs(ctx, capiCluster.Namespace, capiCluster.Name, filepath.Join(artifactFolder, "clusters", capiCluster.Name, strconv.Itoa(testCount)))
 
 		By("Removing CAPI cluster record")
 		Eventually(func() bool {
 			return apierrors.IsNotFound(bootstrapClusterProxy.GetClient().Delete(ctx, capiCluster))
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).Should(BeTrue())
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-azure")...).Should(BeTrue())
 
 		By("Waiting for the rancher cluster record to be removed")
 		Eventually(func() bool {
 			_, err := rancherClusterHandler.Get(rancherClusterKey)
 			return apierrors.IsNotFound(err)
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).Should(BeTrue())
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-azure")...).Should(BeTrue())
 	})
 
 	It("should successfully create a rancher cluster from a CAPI cluster", func() {
@@ -132,23 +118,4 @@ var _ = Describe("Create and delete CAPI cluster functionality should work", fun
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 	})
 
-	It("should successfully remove a rancher cluster and check it if is no longer re-imported", func() {
-		By("Waiting for the rancher cluster record to appear")
-		Eventually(func() error {
-			_, err := rancherClusterHandler.Get(rancherClusterKey)
-			return err
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-
-		By("Removing rancher cluster record, and waiting for it to be removed")
-		Eventually(func() bool {
-			err := rancherClusterHandler.Delete(rancherCluster)
-			return apierrors.IsNotFound(err)
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).Should(BeTrue())
-
-		By("Checking if rancher cluster record will not be re-created again")
-		Consistently(func() bool {
-			_, err := rancherClusterHandler.Get(rancherClusterKey)
-			return apierrors.IsNotFound(err)
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-consistently")...).Should(BeTrue())
-	})
 })

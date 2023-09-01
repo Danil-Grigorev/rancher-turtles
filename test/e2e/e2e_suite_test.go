@@ -258,7 +258,9 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 
 func initCAPIOperator(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
 	By("Adding docker variables secret")
-	Expect(clusterProxy.Apply(ctx, dockerVariablesSecret)).To(Succeed())
+	secret, err := envsubst.Eval(string(infraSecret), os.Getenv)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(clusterProxy.Apply(ctx, []byte(secret))).To(Succeed())
 
 	By("Installing CAPI operator chart")
 	chart := &HelmChart{
@@ -269,7 +271,7 @@ func initCAPIOperator(clusterProxy framework.ClusterProxy, config *clusterctl.E2
 		Output:          Full,
 		AdditionalFlags: Flags("-n", operatorNamespace, "--create-namespace", "--wait"),
 	}
-	_, err := chart.Run(map[string]string{
+	_, err = chart.Run(map[string]string{
 		"cert-manager.enabled": "true",
 		"infrastructure":       config.GetVariable(capiInfrastructure),
 		"secretName":           "variables",

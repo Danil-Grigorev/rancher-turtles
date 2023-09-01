@@ -9,6 +9,7 @@ intervals:
   default/wait-controllers: ["3m", "10s"]
   default/wait-rancher: ["15m", "30s"]
   default/wait-consistently: ["30s", "5s"]
+  default/wait-azure: ["30m", "30s"]
 
 variables:
   RANCHER_VERSION: "v2.7.5"
@@ -16,7 +17,7 @@ variables:
   RANCHER_FEATURES: "embedded-cluster-api=false"
   RANCHER_PATH: "rancher-stable/rancher"
   KUBERNETES_VERSION: "v1.26.3"
-  CAPI_INFRASTRUCTURE: "docker"
+  CAPI_INFRASTRUCTURE: "docker:v1.4.4;azure:v1.4.4"
   RANCHER_REPO_NAME: "rancher-stable"
   RANCHER_URL: "https://releases.rancher.com/server-charts/stable"
   RANCHER_PASSWORD: "rancheradmin"

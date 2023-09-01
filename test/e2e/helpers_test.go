@@ -30,8 +30,11 @@ var (
 	//go:embed resources/testdata/fleet-capi-test.yaml
 	fleetCAPITestdata []byte
 
-	//go:embed resources/config/docker-infra-secret.yaml
-	dockerVariablesSecret []byte
+	//go:embed resources/testdata/capi-azure-test.yaml
+	azureCAPITestdata []byte
+
+	//go:embed resources/config/infra-secret.yaml
+	infraSecret []byte
 
 	//go:embed resources/config/ingress.yaml
 	ingressConfig []byte
@@ -50,6 +53,4 @@ const (
 	operatorNamespace       = "capi-operator-system"
 	rancherTurtlesNamespace = "rancher-turtles-system"
 	rancherNamespace        = "cattle-system"
-	capiClusterName         = "test2"
-	capiClusterNamespace    = "fleet-default"
 )
