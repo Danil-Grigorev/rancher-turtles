@@ -3,13 +3,18 @@ name: Run e2e tests
 on:
   push:
     branches:
-      - "main"
+      - "*"
 
 env:
   NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
   NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
   RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
   RANCHER_PASSWORD: ${{ secrets.RANCHER_PASSWORD }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  AZURE_CLIENT_SECRET_B64: ${{ secrets.AZURE_CLIENT_SECRET_B64 }}
+  AZURE_TENANT_ID_B64: ${{ secrets.AZURE_TENANT_ID_B64 }}
+  AZURE_CLIENT_ID_B64: ${{ secrets.AZURE_CLIENT_ID_B64 }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   e2e:
