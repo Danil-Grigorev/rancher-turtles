@@ -60,6 +60,7 @@ const (
 	rancherRepoName    = "RANCHER_REPO_NAME"
 	rancherPassword    = "RANCHER_PASSWORD"
 	capiInfrastructure = "CAPI_INFRASTRUCTURE"
+	capiCore           = "CAPI_CORE"
 
 	ngrokRepoName  = "NGROK_REPO_NAME"
 	ngrokUrl       = "NGROK_URL"
@@ -260,6 +261,7 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 	_, err := chart.Run(map[string]string{
 		"cluster-api-operator.cert-manager.enabled": "true",
 		"cluster-api-operator.infrastructure":       config.GetVariable(capiInfrastructure),
+		"cluster-api-operator.core":                 config.GetVariable(capiCore),
 		"cluster-api-operator.secretName":           "variables",
 		"cluster-api-operator.secretNamespace":      "default",
 	})
