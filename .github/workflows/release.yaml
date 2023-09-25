@@ -10,11 +10,11 @@ env:
   REGISTRY: ghcr.io
   USERNAME: ${{ github.actor }}
   PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-  ORG: rancher-sandbox
+  ORG: danil-grigorev
   PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
   PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
   PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-  PROD_ORG: rancher-sandbox
+  PROD_ORG: dgrigorev
   CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   RELEASE_DIR: .cr-release-packages
