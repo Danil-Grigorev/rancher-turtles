@@ -56,9 +56,9 @@ jobs:
         username: ${{ env.PROD_USERNAME }}
         password: ${{ env.PROD_PASSWORD }}
     - name: Build prod docker image
-      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }}
+      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
     - name: Push docker image to prod registry
-      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }}
+      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
   release:
     name: Create helm release
     runs-on: ubuntu-latest
