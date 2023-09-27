@@ -17,7 +17,7 @@ variables:
   RANCHER_FEATURES: "embedded-cluster-api=false"
   RANCHER_PATH: "rancher-stable/rancher"
   KUBERNETES_VERSION: "v1.26.3"
-  CAPI_INFRASTRUCTURE: "docker:v1.4.4;azure:v1.4.4"
+  CAPI_INFRASTRUCTURE: "docker:v1.4.4;azure:v1.11.1"
   RANCHER_REPO_NAME: "rancher-stable"
   RANCHER_URL: "https://releases.rancher.com/server-charts/stable"
   RANCHER_PASSWORD: "rancheradmin"
