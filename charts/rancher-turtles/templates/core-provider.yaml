@@ -19,7 +19,7 @@ metadata:
 spec:
   version: {{ index .Values "cluster-api-operator" "cluster-api" "version" }}
   additionalManifests:
-    name: capi-additional-rbac-roles
+    name: capi-additional-resources
     namespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
 {{- if and (index .Values "cluster-api-operator" "cluster-api" "configSecret" "name") (index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace") }}
   secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
@@ -41,7 +41,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: capi-additional-rbac-roles
+  name: capi-additional-resources
   namespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
@@ -69,6 +69,15 @@ data:
       - apiGroups: ["rke-machine.cattle.io"]
         resources: ["*"]
         verbs: ["*"]
+{{- if .Values.rancherTurtles.disableEmbeddedCAPI }}
+    ---
+    apiVersion: management.cattle.io/v3
+    kind: Feature
+    metadata:
+      name: embedded-cluster-api
+    spec:
+      value: false
+{{- end }}
 ---
 {{- if not (and (index .Values "cluster-api-operator" "cluster-api" "configSecret" "name") (index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace")) }}
 apiVersion: v1
