@@ -22,8 +22,8 @@ jobs:
         - destination: ghcr
           registry: ghcr.io
           username: ${{ github.actor }}
-          image: ghcr.io/danil-grigorev/rancher-turtles
           password: GITHUB_TOKEN
+          image: GHCR_IMAGE
           org: danil-grigorev
           secret_registry: false
         - destination: prod
