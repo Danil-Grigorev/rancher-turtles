@@ -49,7 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
       PROD_ORG: rancher-sandbox
       RELEASE_DIR: .cr-release-packages
       CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
