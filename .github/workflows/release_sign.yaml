@@ -1,0 +1,45 @@
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "The OCI image name. This must not include a tag or digest."
+        required: true
+        type: string
+      digest:
+        description: "The OCI image digest. The image digest of the form '<algorithm>:<digest>' (e.g. 'sha256:abcdef...')"
+        required: true
+        type: string
+
+jobs:
+  sign:
+  runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+    steps:
+    - uses: sigstore/cosign-installer@v3.1.2
+    - name: Sign manifests
+      env:
+        COSIGN_EXPERIMENTAL: 1
+      run: |
+        cosign sign --yes ${{ inputs.image }}@${{ inputs.digest }}
+    - name: Verify pushed ghcr images
+      env:
+        COSIGN_EXPERIMENTAL: 1
+      run: |
+        cosign verify ${{ inputs.image }}@${{ inputs.digest }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+
+  provenance:
+    needs: [sign]
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    with:
+      image: ${{ inputs.image }}
+      digest: ${{ inputs.digest }}
+    secrets:
+      registry-username: ${{ github.actor }}
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
