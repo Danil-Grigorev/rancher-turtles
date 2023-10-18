@@ -30,6 +30,9 @@ outputs:
   digest:
     description: "Image digest"
     value: ${{ steps.image_info.outputs.digest }}
+  image:
+    description: "Image name"
+    value: ${{ steps.image_info.outputs.image }}
 
 runs:
   using: "composite"
@@ -54,5 +57,7 @@ runs:
       shell: bash
       id: image_info
       run: |
-        out=$( docker images --digests --format "{{.Digest}}" | head -1 )
-        echo "digest=${out}" >> $GITHUB_OUTPUT
+        digest=$( docker images --digests --format "{{.Digest}}" | head -1 )
+        image=$( docker images --digests --format "{{.Repository}}" | head -1 )
+        echo "digest=${digest}" >> $GITHUB_OUTPUT
+        echo "image=${image}" >> $GITHUB_OUTPUT

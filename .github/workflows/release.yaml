@@ -18,11 +18,11 @@ jobs:
       matrix:
         destination: [ghcr, prod]
         arch: [amd64] # , arm64, s390x]
+        image: [REGISTRY_IMAGE]
         include:
         - destination: ghcr
           registry: ghcr.io
           username: ${{ github.actor }}
-          image: ghcr.io/danil-grigorev/rancher-turtles
           password: GITHUB_TOKEN
           org: danil-grigorev
           secret_registry: false
@@ -30,7 +30,6 @@ jobs:
           registry: REGISTRY_ENDPOINT
           username: REGISTRY_USERNAME
           password: REGISTRY_PASSWORD
-          image: REGISTRY_IMAGE
           org: dgrigorev
           secret_registry: true
     name: Release

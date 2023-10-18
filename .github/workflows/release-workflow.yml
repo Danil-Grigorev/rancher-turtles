@@ -9,7 +9,6 @@ on:
       image:
         type: string
         description: Static image value for the build
-        required: true
 
       password:
         type: string
@@ -52,6 +51,7 @@ jobs:
       packages: write
     outputs:
       digest: ${{ steps.image.outputs.digest }}
+      image: ${{ steps.image.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,7 +83,7 @@ jobs:
       - name: Sign image with cosign
         uses: ./.github/workflows/release_sign
         with:
-          image: ${{ inputs.secret_registry && secrets[inputs.image] || inputs.image }}-${{ inputs.arch }}
+          image: ${{ needs.build.outputs.image || format('{0}-{1}', vars[inputs.image], inputs.arch) }}
           digest: ${{ needs.build.outputs.digest }}
           identity: https://github.com/${{ inputs.org }}/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ inputs.tag }}
           oids-issuer: https://token.actions.githubusercontent.com
@@ -97,11 +97,10 @@ jobs:
       actions: read
       id-token: write
       packages: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@main
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
     with:
       digest: ${{ needs.build.outputs.digest }}
-      compile-generator: true
+      image: ${{ needs.build.outputs.image || format('{0}-{1}', vars[inputs.image], inputs.arch) }}
     secrets:
-      image: ${{ inputs.secret_registry && secrets[inputs.image] || inputs.image }}-${{ inputs.arch }}
       registry-username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
       registry-password: ${{ secrets[inputs.password] }}
