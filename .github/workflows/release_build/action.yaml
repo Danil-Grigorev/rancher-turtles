@@ -27,9 +27,6 @@ inputs:
     description: "The password for registry login"
     type: string
 outputs:
-  image:
-    description: "Full image name"
-    value: ${{ steps.image_info.outputs.image_name }}
   digest:
     description: "Image digest"
     value: ${{ steps.image_info.outputs.digest }}
@@ -57,6 +54,5 @@ runs:
       shell: bash
       id: image_info
       run: |
-        out=$( docker images --digests --format "{{.Digest}} {{.Repository}}" | head -1 )
-        echo "digest=${out% *}" >> $GITHUB_OUTPUT
-        echo "image_name=${out#* }" >> $GITHUB_OUTPUT
+        out=$( docker images --digests --format "{{.Digest}}" | head -1 )
+        echo "digest=${out}" >> $GITHUB_OUTPUT
