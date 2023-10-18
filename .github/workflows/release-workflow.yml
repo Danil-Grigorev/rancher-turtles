@@ -25,6 +25,7 @@ on:
         description: Destination registry for image push
         required: true
 
+
       tag:
         type: string
         description: Tag for the built image
