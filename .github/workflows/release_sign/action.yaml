@@ -1,0 +1,58 @@
+name: "Deploy Frontend to S3"
+description: "Builds and deploys the React frontend to AWS S3"
+inputs:
+  image:
+    description: "The OCI image name. This must not include a tag or digest."
+    required: true
+    type: string
+  digest:
+    description: "The OCI image digest. The image digest of the form '<algorithm>:<digest>' (e.g. 'sha256:abcdef...')"
+    required: true
+    type: string
+  identity:
+    description: "Full oauth identity for signature verification"
+    required: true
+    type: string
+  oids-issuer:
+    description: "Full OIDS issuer URL for signature verification"
+    required: true
+    type: string
+  username:
+    description: "The username to registry"
+    required: true
+    type: string
+  password:
+    required: true
+    description: "The password key to fetch from secret store for registry login"
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    steps:
+    - uses: sigstore/cosign-installer@v3.1.2
+    - name: Sign manifests
+      env:
+        COSIGN_EXPERIMENTAL: 1
+      run: |
+        cosign sign --yes ${{ inputs.image }}@${{ inputs.digest }}
+    - name: Verify pushed ghcr images
+      env:
+        COSIGN_EXPERIMENTAL: 1
+      run: |
+        cosign verify ${{ inputs.image }}@${{ inputs.digest }} --certificate-identity=${{ inputs.identity }} --certificate-oidc-issuer=${{ inputs.oids-issuer}}
+
+  provenance:
+    runs-on: ubuntu-latest
+    needs: [sign]
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    with:
+      image: ${{ inputs.image }}
+      digest: ${{ inputs.digest }}
+    secrets:
+      registry-username: ${{ inputs.username }}
+      registry-password: ${{ inputs.password }}
