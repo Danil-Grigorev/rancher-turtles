@@ -1,10 +1,16 @@
 on:
   workflow_call:
-    secrets:
-      REGISTRY_PASSWORD:
-        description: Password to the registry
-        required: true
     inputs:
+      secret_registry:
+        type: boolean
+        description: All registry related inputs should be treated as secret values
+        required: true
+
+      image:
+        type: string
+        description: Static image value for the build
+        required: true
+
       password:
         type: string
         description: Registry password key to lookup in secrets
@@ -19,6 +25,7 @@ on:
         type: string
         description: Destination registry for image push
         required: true
+
 
       tag:
         type: string
@@ -44,7 +51,6 @@ jobs:
       contents: read
       packages: write
     outputs:
-      image: ${{ steps.image.outputs.image }}
       digest: ${{ steps.image.outputs.digest }}
     steps:
       - name: Checkout
@@ -58,8 +64,8 @@ jobs:
           arch: ${{ inputs.arch }}
           tag: ${{ inputs.tag }}
           org: ${{ inputs.org }}
-          registry: ${{ inputs.registry }}
-          username: ${{ inputs.username }}
+          registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
+          username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
           password: ${{ secrets[inputs.password] }}
 
   sign:
@@ -77,12 +83,12 @@ jobs:
       - name: Sign image with cosign
         uses: ./.github/workflows/release_sign
         with:
-          image: ${{ needs.build.outputs.image }}
+          image: ${{ inputs.secret_registry && secrets[inputs.image] || inputs.image }}-${{ inputs.arch }}
           digest: ${{ needs.build.outputs.digest }}
           identity: https://github.com/${{ inputs.org }}/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ inputs.tag }}
           oids-issuer: https://token.actions.githubusercontent.com
-          registry: ${{ inputs.registry }}
-          username: ${{ inputs.username }}
+          registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
+          username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
           password: ${{ secrets[inputs.password] }}
 
   provenance:
@@ -91,10 +97,11 @@ jobs:
       actions: read
       id-token: write
       packages: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@main
     with:
-      image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
+      compile-generator: true
     secrets:
-      registry-username: ${{ inputs.username }}
+      image: ${{ inputs.secret_registry && secrets[inputs.image] || inputs.image }}-${{ inputs.arch }}
+      registry-username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
       registry-password: ${{ secrets[inputs.password] }}
