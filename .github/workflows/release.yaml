@@ -18,14 +18,14 @@ jobs:
       contents: read
       packages: write
     outputs:
-      multiarch_image: ${{ steps.ghcr-images.outputs.multiarch_image }}
       multiarch_digest: ${{ steps.ghcr-images.outputs.multiarch_digest }}
-      amd64_image: ${{ steps.ghcr-images.outputs.amd64_image }}
       amd64_digest: ${{ steps.ghcr-images.outputs.amd64_digest }}
       arm64_digest: ${{ steps.ghcr-images.outputs.arm64_digest }}
-      arm64_image: ${{ steps.ghcr-images.outputs.arm64_image }}
-      s390x_image: ${{ steps.ghcr-images.outputs.s390x_image }}
       s390x_digest: ${{ steps.ghcr-images.outputs.s390x_digest }}
+      multiarch_image_name: ${{ steps.ghcr-images.outputs.multiarch_image_name }}
+      amd64_image_name: ${{ steps.ghcr-images.outputs.amd64_image_name }}
+      arm64_image_name: ${{ steps.ghcr-images.outputs.arm64_image_name }}
+      s390x_image_name: ${{ steps.ghcr-images.outputs.s390x_image_name }}
     env:
       TAG: ${{ github.ref_name }}
       REGISTRY: ghcr.io
@@ -65,16 +65,20 @@ jobs:
       matrix:
         images: [
           {
-              "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
+              "image":"${{ needs.build-ghcr.outputs.multiarch_image_name }}",
+              "digest":"${{ needs.build-ghcr.outputs.multiarch_digest }}"
           },
           {
-              "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
+              "image":"${{ needs.build-ghcr.outputs.amd64_image_name }}",
+              "digest":"${{ needs.build-ghcr.outputs.amd64_digest }}"
           },
           {
-              "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
+              "image":"${{ needs.build-ghcr.outputs.arm64_image_name }}",
+              "digest":"${{ needs.build-ghcr.outputs.arm64_digest }}"
           },
           {
-              "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
+              "image":"${{ needs.build-ghcr.outputs.s390x_image_name }}",
+              "digest":"${{ needs.build-ghcr.outputs.s390x_digest }}"
           }
         ]
     env:
@@ -94,12 +98,12 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          cosign sign --yes ${{ matrix.images.image }}@${{ matrix.images.digest }}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          cosign verify ${{ matrix.images.image }}@${{ matrix.images.digest }} --certificate-identity-regexp=https://github.com/.* --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   ghcr-provenance:
     needs: [build-ghcr, ghcr-sign]
@@ -111,19 +115,19 @@ jobs:
       matrix:
         images: [
           {
-              "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
+              "image":"${{ needs.build-ghcr.outputs.multiarch_image_name }}",
               "digest":"${{ needs.build-ghcr.outputs.multiarch_digest }}"
           },
           {
-              "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
+              "image":"${{ needs.build-ghcr.outputs.amd64_image_name }}",
               "digest":"${{ needs.build-ghcr.outputs.amd64_digest }}"
           },
           {
-              "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
+              "image":"${{ needs.build-ghcr.outputs.arm64_image_name }}",
               "digest":"${{ needs.build-ghcr.outputs.arm64_digest }}"
           },
           {
-              "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
+              "image":"${{ needs.build-ghcr.outputs.s390x_image_name }}",
               "digest":"${{ needs.build-ghcr.outputs.s390x_digest }}"
           }
         ]
@@ -141,19 +145,19 @@ jobs:
       contents: read
       packages: write
     outputs:
-      multiarch_image: ${{ steps.prod-images.outputs.multiarch_image }}
       multiarch_digest: ${{ steps.prod-images.outputs.multiarch_digest }}
-      amd64_image: ${{ steps.prod-images.outputs.amd64_image }}
       amd64_digest: ${{ steps.prod-images.outputs.amd64_digest }}
       arm64_digest: ${{ steps.prod-images.outputs.arm64_digest }}
-      arm64_image: ${{ steps.prod-images.outputs.arm64_image }}
-      s390x_image: ${{ steps.prod-images.outputs.s390x_image }}
       s390x_digest: ${{ steps.prod-images.outputs.s390x_digest }}
+      multiarch_image_name: ${{ steps.prod-images.outputs.multiarch_image_name }}
+      amd64_image_name: ${{ steps.prod-images.outputs.amd64_image_name }}
+      arm64_image_name: ${{ steps.prod-images.outputs.arm64_image_name }}
+      s390x_image_name: ${{ steps.prod-images.outputs.s390x_image_name }}
     env:
       TAG: ${{ github.ref_name }}
-      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      PROD_USERNAME: dgrigorev
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-      PROD_ORG: danil-grigorev
+      PROD_ORG: dgrigorev
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -188,21 +192,25 @@ jobs:
       matrix:
         images: [
           {
-              "image":"${{ needs.build-prod.outputs.multiarch_image }}",
+              "image":"${{ needs.build-prod.outputs.multiarch_image_name }}",
+              "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
           },
           {
-              "image":"${{ needs.build-prod.outputs.amd64_image }}",
+              "image":"${{ needs.build-prod.outputs.amd64_image_name }}",
+              "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
           },
           {
-              "image":"${{ needs.build-prod.outputs.arm64_image }}",
+              "image":"${{ needs.build-prod.outputs.arm64_image_name }}",
+              "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
           },
           {
-              "image":"${{ needs.build-prod.outputs.s390x_image }}",
+              "image":"${{ needs.build-prod.outputs.s390x_image_name }}",
+              "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
           }
         ]
     env:
       TAG: ${{ github.ref_name }}
-      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      PROD_USERNAME: dgrigorev
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
       - name: Docker login to prod registry
@@ -216,12 +224,12 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          cosign sign --yes ${{ matrix.images.image }}@${{ matrix.images.digest }}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          cosign verify ${{ matrix.images.image }}@${{ matrix.images.digest }} --certificate-identity-regexp=https://github.com/.* --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   prod-provenance:
     needs: [build-prod, prod-sign]
@@ -233,19 +241,19 @@ jobs:
       matrix:
         images: [
           {
-              "image":"${{ needs.build-prod.outputs.multiarch_image }}",
+              "image":"${{ needs.build-prod.outputs.multiarch_image_name }}",
               "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
           },
           {
-              "image":"${{ needs.build-prod.outputs.amd64_image }}",
+              "image":"${{ needs.build-prod.outputs.amd64_image_name }}",
               "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
           },
           {
-              "image":"${{ needs.build-prod.outputs.arm64_image }}",
+              "image":"${{ needs.build-prod.outputs.arm64_image_name }}",
               "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
           },
           {
-              "image":"${{ needs.build-prod.outputs.s390x_image }}",
+              "image":"${{ needs.build-prod.outputs.s390x_image_name }}",
               "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
           }
         ]
@@ -254,7 +262,7 @@ jobs:
       image: ${{ matrix.images.image }}
       digest: ${{ matrix.images.digest }}
     secrets:
-      registry-username: ${{ secrets.REGISTRY_USERNAME }}
+      registry-username: dgrigorev
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 
   release:
