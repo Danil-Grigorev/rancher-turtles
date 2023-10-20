@@ -1,6 +1,7 @@
 name: release
 
 on:
+  workflow_run:
   push:
     tags:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
@@ -72,7 +73,7 @@ jobs:
           image: ${{ steps.image_info.outputs.image_name }}
           digest: ${{ steps.image_info.outputs.digest }}
           username: ${{ matrix.username }}
-          password: ${{ matrix.password }}
+          password: ${{ secrets[matrix.password] }}
           registry: ${{ matrix.registry }}
 
   build-result:
@@ -112,7 +113,7 @@ jobs:
         oids-issuer: https://token.actions.githubusercontent.com
         registry: ${{ fromJson(needs.build-result.outputs.result).registry[matrix.arch] }}
         username: ${{ fromJson(needs.build-result.outputs.result).username[matrix.arch] }}
-        password: ${{ secrets[fromJson(needs.build-result.outputs.result).password[matrix.arch]] }}
+        password: ${{ fromJson(needs.build-result.outputs.result).password[matrix.arch] }}
 
   # sign:
   #   needs: [build]
