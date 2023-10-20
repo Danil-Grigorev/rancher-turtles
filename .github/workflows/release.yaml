@@ -102,7 +102,7 @@ jobs:
         arch: [amd64, arm64, s390x]
     env:
       key: ${{ matrix.destination }}-${{ matrix.arch}}
-      data: ${{ fromJson(needs.build-result.outputs.result) }}
+      data: ${{ needs.build-result.outputs.result }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -111,13 +111,13 @@ jobs:
     - name: Sign image with cosign
       uses: ./.github/workflows/release_sign
       with:
-        image: ${{ fromJson(needs.build-result.outputs.result).image[matrix.arch] }}
-        digest: ${{ fromJson(needs.build-result.outputs.result).digest[matrix.arch] }}
+        image: ${{ fromJson(env.data).image[matrix.arch] }}
+        digest: ${{ fromJson(env.data).digest[matrix.arch] }}
         identity: https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }}
         oids-issuer: https://token.actions.githubusercontent.com
-        registry: ${{ fromJson(needs.build-result.outputs.result).registry[matrix.arch] }}
-        username: ${{ fromJson(needs.build-result.outputs.result).username[matrix.arch] }}
-        password: ${{ secrets[fromJson(needs.build-result.outputs.result).password[matrix.arch]] }}
+        registry: ${{ fromJson(env.data).registry[matrix.arch] }}
+        username: ${{ fromJson(env.data).username[matrix.arch] }}
+        password: ${{ secrets[fromJson(env.data).password[matrix.arch]] }}
 
   # sign:
   #   needs: [build]
