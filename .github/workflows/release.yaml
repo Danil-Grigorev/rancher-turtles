@@ -112,7 +112,7 @@ jobs:
         oids-issuer: https://token.actions.githubusercontent.com
         registry: ${{ fromJson(needs.build-result.outputs.result).registry[matrix.arch] }}
         username: ${{ fromJson(needs.build-result.outputs.result).username[matrix.arch] }}
-        password: ${{ secrets[fromJson(needs.build-result.outputs.result).username[matrix.arch]] }}
+        password: ${{ secrets[fromJson(needs.build-result.outputs.result).password[matrix.arch]] }}
 
   # sign:
   #   needs: [build]
