@@ -69,7 +69,7 @@ jobs:
       id: out
       with:
         matrix-step-name: ${{ github.job }}
-        matrix-key: ${{ matrix.arch }}
+        matrix-key: ${{ matrix.destination }}-${{ matrix.arch }}
         outputs: |-
           image: ${{ steps.image_info.outputs.image_name }}
           digest: ${{ steps.image_info.outputs.digest }}
@@ -85,7 +85,6 @@ jobs:
         id: read
         with:
           matrix-step-name: build
-
     outputs:
       result: "${{ steps.read.outputs.result }}"  
 
@@ -111,13 +110,13 @@ jobs:
     - name: Sign image with cosign
       uses: ./.github/workflows/release_sign
       with:
-        image: ${{ fromJson(env.data).image[matrix.arch] }}
-        digest: ${{ fromJson(env.data).digest[matrix.arch] }}
+        image: ${{ fromJson(env.data).image[matrix.key] }}
+        digest: ${{ fromJson(env.data).digest[matrix.key] }}
+        registry: ${{ fromJson(env.data).registry[matrix.key] }}
+        username: ${{ fromJson(env.data).username[matrix.key] }}
+        password: ${{ secrets[fromJson(env.data).password[matrix.key]] }}
         identity: https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }}
         oids-issuer: https://token.actions.githubusercontent.com
-        registry: ${{ fromJson(env.data).registry[matrix.arch] }}
-        username: ${{ fromJson(env.data).username[matrix.arch] }}
-        password: ${{ secrets[fromJson(env.data).password[matrix.arch]] }}
 
   # sign:
   #   needs: [build]
