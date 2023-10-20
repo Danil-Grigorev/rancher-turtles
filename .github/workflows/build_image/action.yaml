@@ -1,0 +1,62 @@
+name: "Cosign sign"
+description: "Signs the image using digest, and pushes the metadata to the registry"
+inputs:
+  image:
+    description: "The OCI image name. This must not include a tag or digest."
+    required: true
+    type: string
+  digest:
+    description: "The OCI image digest. The image digest of the form '<algorithm>:<digest>' (e.g. 'sha256:abcdef...')"
+    required: true
+    type: string
+  identity:
+    description: "Full oauth identity for signature verification"
+    required: true
+    type: string
+  oidc-provider:
+    description: "Specify the provider to get the OIDC token from (Optional). If unset, github-actions will be used. Options include: [spiffe, google, github-actions, filesystem, buildkite-agent]"
+    type: string
+    default: 'github-actions'
+  oids-issuer:
+    description: "Full OIDS issuer URL for signature verification"
+    required: true
+    type: string
+  registry:
+    description: "The registry to login"
+    required: true
+    type: string
+  username:
+    description: "The username to registry"
+    required: true
+    type: string
+  password:
+    required: true
+    description: "The password key to fetch from secret store for registry login"
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+  - name: Docker login to ghcr registry
+    uses: docker/login-action@v3
+    with:
+      registry: ${{ inputs.registry }}
+      username: ${{ inputs.username }}
+      password: ${{ inputs.password }}
+  # provenance:
+  #   needs: [build-result]
+  #   permissions:
+  #     actions: read 
+  #     id-token: write
+  #     packages: write
+  #   strategy:
+  #     matrix:
+  #       destination: [ghcr]
+  #       arch: [amd64, arm64, s390x]
+  #   uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+  #   with:
+  #     image: ${{ matrix.images.image }}
+  #     digest: ${{ matrix.images.digest }}
+  #   secrets:
+  #     registry-username: ${{ env.PROD_USERNAME }}
+  #     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
