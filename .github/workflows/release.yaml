@@ -66,15 +66,19 @@ jobs:
         images: [
           {
               "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.multiarch_digest }}"
           },
           {
               "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.amd64_digest }}"
           },
           {
               "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.arm64_digest }}"
           },
           {
               "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.s390x_digest }}"
           }
         ]
     env:
@@ -94,7 +98,9 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          img=${{ matrix.images.image }}
+          img=${img%:*}:${{ matrix.images.digest }}
+          cosign sign --yes ${img}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
@@ -189,15 +195,19 @@ jobs:
         images: [
           {
               "image":"${{ needs.build-prod.outputs.multiarch_image }}",
+              "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.amd64_image }}",
+              "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.arm64_image }}",
+              "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.s390x_image }}",
+              "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
           }
         ]
     env:
@@ -216,7 +226,9 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          img=${{ matrix.images.image }}
+          img=${img%:*}:${{ matrix.images.digest }}
+          cosign sign --yes ${img}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
