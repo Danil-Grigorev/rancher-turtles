@@ -66,15 +66,19 @@ jobs:
         images: [
           {
               "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.multiarch_digest }}"
           },
           {
               "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.amd64_digest }}"
           },
           {
               "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.arm64_digest }}"
           },
           {
               "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.s390x_digest }}"
           }
         ]
     env:
@@ -94,12 +98,16 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          img=${{ matrix.images.image }}
+          img=${img%:*}@${{ matrix.images.digest }}
+          cosign sign --yes ${img}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          img=${{ matrix.images.image }}
+          img=${img%:*}@${{ matrix.images.digest }}
+          cosign verify ${img} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   ghcr-provenance:
     needs: [build-ghcr, ghcr-sign]
@@ -151,9 +159,9 @@ jobs:
       s390x_digest: ${{ steps.prod-images.outputs.s390x_digest }}
     env:
       TAG: ${{ github.ref_name }}
-      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      PROD_USERNAME: dgrigorev
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-      PROD_ORG: danil-grigorev
+      PROD_ORG: dgrigorev
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -189,20 +197,24 @@ jobs:
         images: [
           {
               "image":"${{ needs.build-prod.outputs.multiarch_image }}",
+              "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.amd64_image }}",
+              "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.arm64_image }}",
+              "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.s390x_image }}",
+              "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
           }
         ]
     env:
       TAG: ${{ github.ref_name }}
-      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      PROD_USERNAME: dgrigorev
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
       - name: Docker login to prod registry
@@ -216,12 +228,16 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          img=${{ matrix.images.image }}
+          img=${img%:*}@${{ matrix.images.digest }}
+          cosign sign --yes ${img}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          img=${{ matrix.images.image }}
+          img=${img%:*}@${{ matrix.images.digest }}
+          cosign verify ${img} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   prod-provenance:
     needs: [build-prod, prod-sign]
@@ -254,7 +270,7 @@ jobs:
       image: ${{ matrix.images.image }}
       digest: ${{ matrix.images.digest }}
     secrets:
-      registry-username: ${{ secrets.REGISTRY_USERNAME }}
+      registry-username: dgrigorev
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 
   release:
