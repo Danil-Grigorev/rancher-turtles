@@ -118,6 +118,27 @@ jobs:
         identity: https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }}
         oids-issuer: https://token.actions.githubusercontent.com
 
+  provenance:
+    runs-on: ubuntu-latest
+    needs: [build-result, sign]
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        destination: [ghcr] # [ghcr, prod]
+        arch: [amd64, arm64, s390x]
+    env:
+      key: ${{ matrix.destination }}-${{ matrix.arch}}
+      data: ${{ needs.build-result.outputs.result }}
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    with:
+      image: ${{ fromJson(env.data).image[matrix.key] }}
+      digest: ${{ fromJson(env.data).digest[matrix.key] }}
+    secrets:
+      registry-username: ${{ fromJson(env.data).username[matrix.key] }}
+      registry-password: ${{ secrets[fromJson(env.data).password[matrix.key]] }}
   # sign:
   #   needs: [build]
   #   permissions:
