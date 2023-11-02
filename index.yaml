@@ -42,6 +42,21 @@ entries:
     - https://github.com/Danil-Grigorev/rancher-turtles/releases/download/v4.5.4/rancher-turtles-4.5.4.tgz
     version: 4.5.4
   - apiVersion: v2
+    appVersion: 1.22.2
+    created: "2023-11-02T10:34:40.230732862Z"
+    dependencies:
+    - condition: cluster-api-operator.enabled
+      name: cluster-api-operator
+      repository: https://kubernetes-sigs.github.io/cluster-api-operator
+      version: v0.5.1
+    description: Rancher Turtles
+    digest: fe1a16a30ae0672886871d043f4b131181df5a8014f84f41ed63c5efb598afb9
+    name: rancher-turtles
+    type: application
+    urls:
+    - https://github.com/Danil-Grigorev/rancher-turtles/releases/download/v1.22.2/rancher-turtles-1.22.2.tgz
+    version: 1.22.2
+  - apiVersion: v2
     appVersion: 1.22.1
     created: "2023-10-27T21:50:14.080299203Z"
     dependencies:
@@ -306,4 +321,4 @@ entries:
     urls:
     - https://github.com/Danil-Grigorev/rancher-turtles/releases/download/rancher-turtles-0.0.0/rancher-turtles-0.0.0.tgz
     version: 0.0.0
-generated: "2023-10-27T21:50:14.080643806Z"
+generated: "2023-11-02T10:34:40.230949169Z"
