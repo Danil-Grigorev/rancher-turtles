@@ -55,12 +55,30 @@ jobs:
       contents: read
     strategy:
       matrix:
+        destination: [ghcr, prod]
         image: [GHCR_IMAGE, REGISTRY_IMAGE]
+        include:
+        - destination: ghcr
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: GITHUB_TOKEN
+          secret_registry: false
+        - destination: prod
+          registry: REGISTRY_ENDPOINT
+          username: REGISTRY_USERNAME
+          password: REGISTRY_PASSWORD
+          secret_registry: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
+          username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
+          password: ${{ secrets[inputs.password] }}
       - name: Publish multiarch
         run: CONTROLLER_IMG=${{ vars[matrix.image] }} TAG=${{ github.ref_name }} make docker-push-manifest-rancher-turtles
 
