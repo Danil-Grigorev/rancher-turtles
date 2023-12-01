@@ -28,7 +28,7 @@ const (
 )
 
 // CAPIProviderSpec defines the desired state of CAPIProvider.
-// +kubebuilder:validation:XValidation:message="CAPI Provider version should be in the semver format",rule="!has(self.version) || self.version.matches(r\"\"\"^([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+)?$\"\"\")"
+// +kubebuilder:validation:XValidation:message="CAPI Provider version should be in the semver format prefixed with 'v'. Example: v1.9.3",rule="!has(self.version) || self.version.matches(r\"\"\"^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+)?$\"\"\")"
 //
 //nolint:lll
 type CAPIProviderSpec struct {
@@ -57,10 +57,10 @@ type CAPIProviderSpec struct {
 	// Variables is a map of environment variables to add to the content of the ConfigSecret
 	// +optional
 	// +kubebuilder:example={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
-	Variables map[string]string `json:"variables"`
+	Variables map[string]string `json:"variables,omitempty"`
 
 	// ProviderSpec is the spec of the underlying CAPI Provider resource.
-	ProviderSpec *operatorv1.ProviderSpec `json:",inline"`
+	operatorv1.ProviderSpec `json:",inline"`
 }
 
 // Features defines a collection of features for the CAPI Provider to apply.
@@ -104,19 +104,23 @@ type WorkloadIdentityRef struct {
 type CAPIProviderStatus struct {
 	// Indicates the provider status
 	// +kubebuilder:default=Pending
-	State ProviderState `json:"state,omitempty"`
+	Phase Phase `json:"phase,omitempty"`
 
 	// Variables is a map of environment variables added to the content of the ConfigSecret
 	// +kubebuilder:default={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables,omitempty"`
 
-	ProviderStatus *operatorv1.ProviderStatus `json:",inline"`
+	operatorv1.ProviderStatus `json:",inline"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-
 // CAPIProvider is the Schema for the CAPI Providers API.
+//
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type"
+// +kubebuilder:printcolumn:name="ProviderName",type="string",JSONPath=".spec.name"
+// +kubebuilder:printcolumn:name="InstalledVersion",type="string",JSONPath=".status.installedVersion"
+// +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
 type CAPIProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
