@@ -40,8 +40,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	"github.com/rancher-sandbox/rancher-turtles/feature"
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers"
 	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
@@ -77,11 +79,13 @@ func init() {
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(provisioningv1.AddToScheme(scheme))
 	utilruntime.Must(managementv3.AddToScheme(scheme))
+	utilruntime.Must(turtlesv1.AddToScheme(scheme))
+	utilruntime.Must(operatorv1.AddToScheme(scheme))
 }
 
 // initFlags initializes the flags.
 func initFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&metricsBindAddr, "metrics-bind-addr", ":8080",
+	fs.StringVar(&metricsBindAddr, "metrics-bind-addr", ":8089",
 		"The address the metric endpoint binds to.")
 
 	fs.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -204,6 +208,21 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 			setupLog.Error(err, "unable to create Rancher kubeconfig secret controller")
 			os.Exit(1)
 		}
+	}
+
+	setupLog.Info("enabling CAPI Operator synchronization controller")
+
+	client, err := client.NewWithWatch(mgr.GetConfig(), client.Options{Scheme: mgr.GetClient().Scheme()})
+	if err != nil {
+		setupLog.Error(err, "unable to create client with watch")
+		os.Exit(1)
+	}
+
+	if err := (&controllers.CAPIProviderReconciler{
+		Client: client,
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create CAPI Provider controller")
+		os.Exit(1)
 	}
 }
 

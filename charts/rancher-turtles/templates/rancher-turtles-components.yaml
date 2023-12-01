@@ -1887,6 +1887,30 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - capiproviders
+  - capiproviders/status
+  - capiproviders/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.cluster.x-k8s.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
