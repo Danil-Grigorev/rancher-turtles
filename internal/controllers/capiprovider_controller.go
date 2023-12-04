@@ -20,11 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -33,15 +32,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 )
-
-const fieldOwner = "capi-provider-operator"
 
 // CAPIProviderReconciler reconciles a CAPIProvider object.
 type CAPIProviderReconciler struct {
-	Client client.WithWatch
+	client.Client
 	Scheme *runtime.Scheme
 }
 
@@ -50,24 +49,17 @@ type CAPIProviderReconciler struct {
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/finalizers,verbs=update
 //+kubebuilder:rbac:groups=operator.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the CAPIProvider object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
+// Reconcile reconciles the CAPIProvider object.
 func (r *CAPIProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
 	capiProvider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
-		Namespace: req.Namespace,
 		Name:      req.Name,
+		Namespace: req.Namespace,
 	}}
-
-	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider); client.IgnoreNotFound(err) != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, capiProvider); apierrors.IsNotFound(err) {
+		return ctrl.Result{}, nil
+	} else if err != nil {
 		log.Error(err, fmt.Sprintf("Unable to get CAPIProvider manifest: %s", req.String()))
 
 		return ctrl.Result{}, err
@@ -81,20 +73,15 @@ func (r *CAPIProviderReconciler) reconcileNormal(ctx context.Context, capiProvid
 }
 
 func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtlesv1.CAPIProvider) (_ ctrl.Result, err error) {
-	log := log.FromContext(ctx)
-
-	mirror := NewMirror(capiProvider)
-	cl := NewMirrorClient(r.Client, mirror)
-
-	if err := cl.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider); client.IgnoreNotFound(err) != nil {
-		log.Error(err, fmt.Sprintf("Unable to get mirrored manifest: %s", client.ObjectKeyFromObject(capiProvider).String()))
-
-		return ctrl.Result{}, err
+	syncer := sync.SyncerList{
+		sync.NewProviderSyncer(r.Client, capiProvider),
+		sync.NewSecretSyncer(r.Client, capiProvider),
 	}
 
-	defer patcher(ctx, cl, capiProvider, &err)
-
-	mirror.Sync()
+	if err := syncer.Sync(ctx); client.IgnoreNotFound(err) != nil {
+		return ctrl.Result{}, err
+	}
+	defer syncer.Apply(ctx, &err)
 
 	switch {
 	case conditions.IsTrue(capiProvider, operatorv1.ProviderInstalledCondition):
@@ -105,52 +92,11 @@ func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtles
 		capiProvider.Status.Phase = turtlesv1.Provisioning
 	}
 
-	return ctrl.Result{}, nil
-}
-
-func patcher(ctx context.Context, c client.Client, obj client.Object, reterr *error) {
-	// Always attempt to update the object and status after each reconciliation.
-	log := log.FromContext(ctx)
-	log.Info(fmt.Sprintf("Updating object %s", client.ObjectKeyFromObject(obj)))
-
-	patchOptions := []client.PatchOption{
-		client.ForceOwnership,
-		client.FieldOwner(fieldOwner),
-	}
-	statusOptions := []client.SubResourcePatchOption{
-		client.ForceOwnership,
-		client.FieldOwner(fieldOwner),
-	}
-
-	obj.SetManagedFields(nil)
-
-	if err := c.Status().Patch(ctx, obj, client.Apply, statusOptions...); err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Object %s is not found, skipping update", client.ObjectKeyFromObject(obj)))
-			return
-		}
-
-		*reterr = kerrors.NewAggregate([]error{*reterr, err})
-		log.Error(*reterr, fmt.Sprintf("Unable to patch object status: %s", *reterr))
-	}
-
-	obj.SetManagedFields(nil)
-
-	if err := c.Patch(ctx, obj, client.Apply, patchOptions...); err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Object %s is not found, skipping update", client.ObjectKeyFromObject(obj)))
-			return
-		}
-
-		*reterr = kerrors.NewAggregate([]error{*reterr, err})
-		log.Error(*reterr, fmt.Sprintf("Unable to patch object: %s", *reterr))
-	}
+	return ctrl.Result{}, sync.PatchStatus(ctx, r.Client, capiProvider)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	_ = log.FromContext(ctx)
-
+func (r *CAPIProviderReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) (err error) {
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&turtlesv1.CAPIProvider{}).
 		Build(r)
@@ -164,6 +110,7 @@ func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 		&operatorv1.InfrastructureProvider{},
 		&operatorv1.BootstrapProvider{},
 		&operatorv1.AddonProvider{},
+		&corev1.Secret{},
 	}
 
 	for _, resource := range resources {

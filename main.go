@@ -79,8 +79,9 @@ func init() {
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(provisioningv1.AddToScheme(scheme))
 	utilruntime.Must(managementv3.AddToScheme(scheme))
-	utilruntime.Must(turtlesv1.AddToScheme(scheme))
 	utilruntime.Must(operatorv1.AddToScheme(scheme))
+	utilruntime.Must(turtlesv1.AddToScheme(scheme))
+	turtlesv1.AddKnownTypes(scheme)
 }
 
 // initFlags initializes the flags.
@@ -212,14 +213,9 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 	setupLog.Info("enabling CAPI Operator synchronization controller")
 
-	client, err := client.NewWithWatch(mgr.GetConfig(), client.Options{Scheme: mgr.GetClient().Scheme()})
-	if err != nil {
-		setupLog.Error(err, "unable to create client with watch")
-		os.Exit(1)
-	}
-
 	if err := (&controllers.CAPIProviderReconciler{
-		Client: client,
+		Client: mgr.GetClient(),
+		Scheme: scheme,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create CAPI Provider controller")
 		os.Exit(1)
