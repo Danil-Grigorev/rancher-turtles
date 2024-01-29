@@ -79,6 +79,12 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	result.BootstrapClusterProvider, result.BootstrapClusterProxy = setupCluster(
 		ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.KubernetesVersion)
 
+	defer func() {
+		if input.IsolatedMode {
+			result.IsolatedHostName = configureIsolatedEnvironment(ctx, result.BootstrapClusterProxy)
+		}
+	}()
+
 	if input.UseExistingCluster {
 		return result
 	}
@@ -87,10 +93,6 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 
 	result.BootstrapClusterLogFolder = filepath.Join(input.ArtifactFolder, "clusters", result.BootstrapClusterProxy.GetName())
 	Expect(os.MkdirAll(result.BootstrapClusterLogFolder, 0750)).To(Succeed(), "Invalid argument. Log folder can't be created %s", result.BootstrapClusterLogFolder)
-
-	if input.IsolatedMode {
-		result.IsolatedHostName = configureIsolatedEnvironment(ctx, result.BootstrapClusterProxy)
-	}
 
 	return result
 }

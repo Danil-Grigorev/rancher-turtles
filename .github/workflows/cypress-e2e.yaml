@@ -1,0 +1,154 @@
+name: Rancher Turtles cypress E2E tests
+
+on:
+  workflow_call:
+    # Variables to set when calling this reusable workflow
+    secrets:
+      credentials:
+        description: Credentials to use to connect
+        required: true
+      pat_token:
+        # A token is needed to be able to add runner on the repo, maybe this can be changed later
+        # This token is linked to a personal account
+        # So in case of token issue you have to check (no specific order and for example):
+        # - the expiration date
+        # - if the account associated still exists
+        # - if the person still has access to the repo
+        description: PAT token used to add runner
+        required: true
+    inputs:
+      cluster_name:
+        description: Name of the provisioned cluster
+        required: true
+        type: string
+      capi_ui_version:
+        description: Version of the capi ui which will be installed (dev/stable)
+        default: dev
+        type: string
+      k8s_version_to_provision:
+        description: Name and version of installed K8s distribution
+        required: true
+        type: string
+      rancher_log_collector:
+        description: URL of the Rancher log collector script
+        default: https://raw.githubusercontent.com/rancherlabs/support-tools/master/collection/rancher/v2.x/logs-collector/rancher2_logs_collector.sh
+        type: string
+      test_description:
+        description: Short description of the test
+        type: string
+      upstream_cluster_version:
+        description: Cluster upstream version where to install Rancher (K3s or RKE2)
+        default: v1.26.10+k3s2
+        type: string
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      ARCH: amd64
+      CLUSTER_NAME: ${{ inputs.cluster_name }}
+      CLUSTER_NS: fleet-default
+      K8S_VERSION_TO_PROVISION: ${{ inputs.k8s_version_to_provision }}
+      RANCHER_VERSION: ${{ inputs.rancher_version }}
+      TAG: 0.0.1
+      TURTLES_E2E_REPO: rancher-sandbox/rancher-turtles-e2e
+      TURTLES_REPO: rancher-sandbox/rancher-turtles
+      MANIFEST_IMG: localhost:5000/$TURTLES_REPO-$ARCH
+    steps:
+      # Build rancher-turtles nightly chart
+      - name: Check out rancher-turtles repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.TURTLES_REPO }}
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.5.0
+        with:
+          config: scripts/kind-cluster-with-extramounts.yaml
+
+      - name: Prepare cluster
+        run: USE_EXISTING_CLUSTER=true ISOLATED_MODE=true GINKGO_TESTS=$(pwd)/test/e2e/suites/ui-cypress make test-e2e
+
+      # This step builds latest turtles chart and pushes latest turtles docker image to local docker registry
+      - name: Make chart
+        run: |
+          TAG=v${{ env.TAG }} MANIFEST_IMG=${{ env.MANIFEST_IMG }} make docker-build
+          RELEASE_TAG=v${{ env.TAG }} CONTROLLER_IMG=${{ env.MANIFEST_IMG }} CONTROLLER_IMAGE_VERSION=v${{ env.TAG }} make build-chart
+          docker run -d -p 5000:5000 --name registry registry:2
+          docker push ${{ env.MANIFEST_IMG }}:v${{ env.TAG }}
+
+      - name: Copy chart file
+        run: sudo cp ${{ github.workspace }}/out/package/rancher-turtles-${{ env.TAG }}.tgz ${{ runner.temp }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.TURTLES_REPO }}
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: tests/go.mod
+      - name: Copy chart file for chartmuseum
+        run: sudo cp ${{ runner.temp }}/rancher-turtles-${{ env.TAG }}.tgz ${{ github.workspace }}/tests/assets
+      - name: Install Chartmuseum
+        run: cd tests && make e2e-install-chartmuseum
+      - name: Cypress tests - Basics
+        # Basics means tests without an extra elemental node needed
+        env:
+          BROWSER: chrome
+          CHARTMUSEUM_REPO: http://localhost:8080
+          CYPRESS_DOCKER: 'cypress/included:10.9.0'
+          CAPI_UI_VERSION: ${{ inputs.capi_ui_version }}
+          K8S_UPSTREAM_VERSION: ${{ inputs.upstream_cluster_version }}
+          # RANCHER_VERSION: ${{ steps.component.outputs.rm_version }}
+          RANCHER_PASSWORD: rancheradmin # secret
+          RANCHER_URL: https://172.18.0.2.sslip.io/dashboard
+          RANCHER_USER: admin
+          SPEC: |
+            /workdir/e2e/unit_tests/first_connection.spec.ts
+            /workdir/e2e/unit_tests/user.spec.ts
+            /workdir/e2e/unit_tests/turtles_operator.spec.ts
+            /workdir/e2e/unit_tests/turtles_plugin.spec.ts
+            /workdir/e2e/unit_tests/menu.spec.ts
+            /workdir/e2e/unit_tests/namespace.spec.ts
+            /workdir/e2e/unit_tests/capd_setup.spec.ts
+            /workdir/e2e/unit_tests/capd_cluster.spec.ts
+        run: cd tests && make start-cypress-tests
+      - name: Upload Cypress screenshots (Basics)
+        if: failure() 
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-screenshots-basics-${{ inputs.cluster_name }}
+          path: tests/cypress/latest/screenshots
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Upload Cypress videos (Basics)
+        # Test run video is always captured, so this action uses "always()" condition
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-videos-basics-${{ inputs.cluster_name }}
+          path: tests/cypress/latest/videos
+          retention-days: 7
+      - name: Add summary
+        if: ${{ always() }}
+        run: |
+          # Add summary
+          echo "## General informations" >> ${GITHUB_STEP_SUMMARY}
+          echo -e "***${{ inputs.test_description }}***\n" >> ${GITHUB_STEP_SUMMARY}
+          echo "Type of cluster deployed: ${CLUSTER_TYPE:-normal}" >> ${GITHUB_STEP_SUMMARY}
+          echo "### Rancher Manager" >> ${GITHUB_STEP_SUMMARY}
+          echo "Rancher Manager Image: ${{ steps.component.outputs.rm_version }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "Rancher Manager Version: ${{ inputs.rancher_version }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "CertManager Image: ${{ steps.component.outputs.cert_manager_version }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "CAPI UI Extension Version: ${{ inputs.capi_ui_version }}" >> ${GITHUB_STEP_SUMMARY}
+          if ${{ inputs.ui_account != '' }}; then
+            echo "Elemental UI User: ${{ inputs.ui_account }}" >> ${GITHUB_STEP_SUMMARY}
+          fi
+          echo "### Kubernetes" >> ${GITHUB_STEP_SUMMARY}
+          echo "K3s on Rancher Manager: ${{ env.INSTALL_K3S_VERSION }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "K8s version deployed on the cluster(s): ${{ inputs.k8s_version_to_provision }}" >> ${GITHUB_STEP_SUMMARY}
