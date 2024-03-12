@@ -104,24 +104,6 @@ var _ = BeforeSuite(func() {
 		hostName = setupClusterResult.IsolatedHostName
 	}
 
-	testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
-		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:               flagVals.HelmBinaryPath,
-		ChartPath:                    flagVals.ChartPath,
-		CAPIProvidersYAML:            e2e.CapiProviders,
-		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        fmt.Sprintf("ghcr.io/rancher-sandbox/rancher-turtles-%s", runtime.GOARCH),
-		Tag:                          "v0.0.1",
-		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		AdditionalValues: map[string]string{
-			"cluster-api-operator.cluster-api.version":          "v1.5.2",
-			"cluster-api-operator.cert-manager.enabled":         "true",
-			"rancherTurtles.features.embedded-capi.disabled":    "false",
-			"rancherTurtles.features.rancher-webhook.cleanup":   "false",
-			"rancherTurtles.features.rancher-kubeconfigs.label": "true", // force to be true even if the default in teh chart changes
-		},
-	})
-
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:           flagVals.HelmBinaryPath,
@@ -142,11 +124,14 @@ var _ = BeforeSuite(func() {
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:         flagVals.HelmBinaryPath,
 		HelmExtraValuesPath:    filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher.yaml"),
-		InstallCertManager:     false,
+		InstallCertManager:     true,
+		CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
+		CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
+		CertManagerRepoName:    e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
 		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherRepoNameVar),
 		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherUrlVar),
 		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherPathVar),
-		RancherVersion:         e2eConfig.GetVariable(e2e.RancherLegacyVersionVar),
+		RancherVersion:         e2eConfig.GetVariable(e2e.RancherVersionVar),
 		RancherHost:            hostName,
 		RancherNamespace:       e2e.RancherNamespace,
 		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
@@ -159,6 +144,26 @@ var _ = BeforeSuite(func() {
 		RancherServicePatch:    e2e.RancherServicePatch,
 		Variables:              e2eConfig.Variables,
 	})
+
+	testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
+		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:               flagVals.HelmBinaryPath,
+		ChartPath:                    flagVals.ChartPath,
+		CAPIProvidersYAML:            e2e.CapiProviders,
+		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+		Image:                        fmt.Sprintf("ghcr.io/rancher-sandbox/rancher-turtles-%s", runtime.GOARCH),
+		Tag:                          "v0.0.1",
+		ExpectCAPIDeployments:        false,
+		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		AdditionalValues: map[string]string{
+			"cluster-api-operator.cluster-api.version":          "v1.5.5",
+			"cluster-api-operator.cert-manager.enabled":         "false",
+			"rancherTurtles.features.embedded-capi.disabled":    "false",
+			"rancherTurtles.features.rancher-webhook.cleanup":   "false",
+			"rancherTurtles.features.rancher-kubeconfigs.label": "true", // force to be true even if the default in teh chart changes
+		},
+	})
+
 })
 
 var _ = AfterSuite(func() {

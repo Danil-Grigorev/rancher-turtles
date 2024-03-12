@@ -39,6 +39,7 @@ type DeployRancherTurtlesInput struct {
 	Namespace                    string
 	Image                        string
 	Tag                          string
+	ExpectCAPIDeployments        bool
 	WaitDeploymentsReadyInterval []interface{}
 	AdditionalValues             map[string]string
 }
@@ -96,40 +97,42 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	By("Adding CAPI infrastructure providers")
 	Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersYAML)).To(Succeed())
 
-	By("Waiting for CAPI deployment to be available")
-	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
-		Getter: input.BootstrapClusterProxy.GetClient(),
-		Deployment: &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "capi-controller-manager",
-				Namespace: "capi-system",
+	if input.ExpectCAPIDeployments {
+		By("Waiting for CAPI deployment to be available")
+		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+			Getter: input.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "capi-controller-manager",
+					Namespace: "capi-system",
+				}},
+		}, input.WaitDeploymentsReadyInterval...)
+
+		By("Waiting for CAPI kubeadm bootstrap deployment to be available")
+		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+			Getter: input.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "capi-kubeadm-bootstrap-controller-manager",
+				Namespace: "capi-kubeadm-bootstrap-system",
 			}},
-	}, input.WaitDeploymentsReadyInterval...)
+		}, input.WaitDeploymentsReadyInterval...)
 
-	By("Waiting for CAPI kubeadm bootstrap deployment to be available")
-	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
-		Getter: input.BootstrapClusterProxy.GetClient(),
-		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-			Name:      "capi-kubeadm-bootstrap-controller-manager",
-			Namespace: "capi-kubeadm-bootstrap-system",
-		}},
-	}, input.WaitDeploymentsReadyInterval...)
+		By("Waiting for CAPI kubeadm control plane deployment to be available")
+		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+			Getter: input.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "capi-kubeadm-control-plane-controller-manager",
+				Namespace: "capi-kubeadm-control-plane-system",
+			}},
+		}, input.WaitDeploymentsReadyInterval...)
 
-	By("Waiting for CAPI kubeadm control plane deployment to be available")
-	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
-		Getter: input.BootstrapClusterProxy.GetClient(),
-		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-			Name:      "capi-kubeadm-control-plane-controller-manager",
-			Namespace: "capi-kubeadm-control-plane-system",
-		}},
-	}, input.WaitDeploymentsReadyInterval...)
-
-	By("Waiting for CAPI docker provider deployment to be available")
-	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
-		Getter: input.BootstrapClusterProxy.GetClient(),
-		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-			Name:      "capd-controller-manager",
-			Namespace: "capd-system",
-		}},
-	}, input.WaitDeploymentsReadyInterval...)
+		By("Waiting for CAPI docker provider deployment to be available")
+		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+			Getter: input.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "capd-controller-manager",
+				Namespace: "capd-system",
+			}},
+		}, input.WaitDeploymentsReadyInterval...)
+	}
 }

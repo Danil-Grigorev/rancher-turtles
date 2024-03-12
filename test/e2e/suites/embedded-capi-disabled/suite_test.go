@@ -156,6 +156,7 @@ var _ = BeforeSuite(func() {
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
 		Image:                        fmt.Sprintf("ghcr.io/rancher-sandbox/rancher-turtles-%s", runtime.GOARCH),
 		Tag:                          "v0.0.1",
+		ExpectCAPIDeployments:        true,
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		AdditionalValues: map[string]string{
 			"cluster-api-operator.cert-manager.enabled":      "false",

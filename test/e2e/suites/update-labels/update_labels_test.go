@@ -38,7 +38,7 @@ import (
 	"github.com/rancher-sandbox/rancher-turtles/test/testenv"
 )
 
-var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work with CAPI 1.5.x and label renaming", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work with CAPI 1.5.x and label renaming", Label(e2e.ShortTestLabel), func() {
 
 	var (
 		specName          = "updatelabels"
