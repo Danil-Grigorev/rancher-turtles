@@ -1,0 +1,262 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-manager
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-leader-election-role
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-leader-election-rolebinding
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: test-extension-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: test-extension-manager
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: test-extension-manager-role
+subjects:
+- kind: ServiceAccount
+  name: test-extension-manager
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-webhook-service
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+spec:
+  ports:
+  - port: 443
+    targetPort: webhook-server
+  selector:
+    app: test-extension-manager
+    cluster.x-k8s.io/provider: runtime-extension-test
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    app: test-extension-manager
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-controller-manager
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-extension-manager
+      cluster.x-k8s.io/provider: runtime-extension-test
+  template:
+    metadata:
+      labels:
+        app: test-extension-manager
+        cluster.x-k8s.io/provider: runtime-extension-test
+    spec:
+      containers:
+      - args:
+        - --leader-elect
+        - --logging-format=json
+        - --diagnostics-address=:8443
+        - --insecure-diagnostics=false
+        command:
+        - /manager
+        image: gcr.io/k8s-staging-cluster-api/test-extension:main
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: healthz
+        name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        - containerPort: 9440
+          name: healthz
+          protocol: TCP
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: healthz
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          runAsGroup: 65532
+          runAsUser: 65532
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: test-extension-manager
+      terminationGracePeriodSeconds: 10
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+      volumes:
+      - name: cert
+        secret:
+          secretName: test-extension-webhook-service-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-serving-cert
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+spec:
+  dnsNames:
+  - "test-extension-webhook-service.{{ .Values.rancherTurtles.namespace }}.svc"
+  - "test-extension-webhook-service.{{ .Values.rancherTurtles.namespace }}.svc.cluster.local"
+  - localhost
+  issuerRef:
+    kind: Issuer
+    name: test-extension-selfsigned-issuer
+  secretName: test-extension-webhook-service-cert
+  subject:
+    organizations:
+    - k8s-sig-cluster-lifecycle
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+  labels:
+    cluster.x-k8s.io/provider: runtime-extension-test
+  name: test-extension-selfsigned-issuer
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+spec:
+  selfSigned: {}
+---
+apiVersion: runtime.cluster.x-k8s.io/v1alpha1
+kind: ExtensionConfig
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+    runtime.cluster.x-k8s.io/inject-ca-from-secret: "{{ .Values.rancherTurtles.namespace }}/test-extension-webhook-service-cert"
+  name: test-extension
+  namespace: {{ .Values.rancherTurtles.namespace }}
+spec:
+  clientConfig:
+    service:
+      name: test-extension-webhook-service
+      namespace: "{{ .Values.rancherTurtles.namespace }}"
+      port: 443
