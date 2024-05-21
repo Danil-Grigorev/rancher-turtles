@@ -29,7 +29,6 @@ tilt-settings.yaml
 
 out/
 _artifacts
-hack/crd/bases/*
 
 .devbox/
 
