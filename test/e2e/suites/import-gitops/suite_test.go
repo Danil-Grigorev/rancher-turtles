@@ -193,7 +193,9 @@ var _ = BeforeSuite(func() {
 			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
 			Version:                      "v0.6.0",
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             map[string]string{},
+			AdditionalValues: map[string]string{
+				"rancherTurtles.features.managementv3-cluster.enabled": "false", // disable the default management.cattle.io/v3 controller
+			},
 		}
 		testenv.DeployRancherTurtles(ctx, rtInput)
 
