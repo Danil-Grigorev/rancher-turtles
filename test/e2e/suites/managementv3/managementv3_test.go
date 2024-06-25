@@ -62,7 +62,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 	})
 })
 
-var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.DontRunLabel), func() {
+var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -75,7 +75,7 @@ var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CA
 			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ArtifactFolder:                 flagVals.ArtifactFolder,
 			ClusterTemplate:                e2e.CAPIAzureAKSMMP,
-			ClusterName:                    "highlander-e2e-clusterv3-2",
+			ClusterName:                    "highlander-e2e-aks",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        giteaResult.GitAddress,

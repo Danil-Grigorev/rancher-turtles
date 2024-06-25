@@ -27,6 +27,9 @@ var (
 	//go:embed data/capi-operator/capi-providers.yaml
 	CapiProviders []byte
 
+	//go:embed data/capi-operator/capi-kubeadm-provider.yaml
+	CapiKubeadmProviders []byte
+
 	//go:embed data/capi-operator/capv-provider.yaml
 	CapvProvider []byte
 

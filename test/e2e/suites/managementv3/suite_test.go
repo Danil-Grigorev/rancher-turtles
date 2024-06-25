@@ -188,7 +188,7 @@ var _ = BeforeSuite(func() {
 		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:               flagVals.HelmBinaryPath,
 		ChartPath:                    flagVals.ChartPath,
-		CAPIProvidersYAML:            e2e.CapiProviders,
+		CAPIProvidersYAML:            append(e2e.CapiProviders, e2e.CapiKubeadmProviders...),
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
 		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
 		Tag:                          "v0.0.1",
