@@ -345,6 +345,29 @@ var _ = AfterSuite(func() {
 	})
 })
 
+var _ = AfterEach(func() {
+	upgradeInput := testenv.UpgradeRancherTurtlesInput{
+		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:               flagVals.HelmBinaryPath,
+		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+		Tag:                          "v0.0.1",
+		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		AdditionalValues:             map[string]string{},
+	}
+
+	if flagVals.UseEKS {
+		upgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+		upgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+	} else {
+		// NOTE: this was the default previously in the chart locally and ok as
+		// we where loading the image into kind manually.
+		upgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	}
+
+	testenv.UpgradeRancherTurtles(ctx, upgradeInput)
+})
+
 func shortTestOnly() bool {
 	return GinkgoLabelFilter() == e2e.ShortTestLabel
 }
