@@ -77,9 +77,14 @@ var secrets = []string{
 	"AZURE_TENANT_ID",
 }
 
+type AddtionalLog struct {
+	Name    string
+	Command string
+}
+
 // CollectArtifacts collects artifacts using the provided kubeconfig path, name, and additional arguments.
 // It returns an error if the kubeconfig path is empty or if there is an error running the kubectl command.
-func CollectArtifacts(ctx context.Context, kubeconfigPath, name string, args ...string) error {
+func CollectArtifacts(ctx context.Context, kubeconfigPath, name string, nodeLogs []AddtionalLog, args ...string) error {
 	if kubeconfigPath == "" {
 		return fmt.Errorf("Unable to collect artifacts: kubeconfig path is empty")
 	}
@@ -87,6 +92,10 @@ func CollectArtifacts(ctx context.Context, kubeconfigPath, name string, args ...
 	aargs := append([]string{"crust-gather", "collect", "--kubeconfig", kubeconfigPath, "-f", name, "-v", "ERROR"}, args...)
 	for _, secret := range secrets {
 		aargs = append(aargs, "-s", secret)
+	}
+
+	for _, log := range nodeLogs {
+		aargs = append(aargs, "--additional-logs", fmt.Sprintf("%s:%s", log.Name, log.Command))
 	}
 
 	cmd := exec.Command("kubectl", aargs...)
@@ -108,7 +117,7 @@ func dumpBootstrapCluster(ctx context.Context, bootstrapClusterProxy framework.C
 		return
 	}
 
-	err := CollectArtifacts(ctx, bootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactFolder, bootstrapClusterProxy.GetName(), "bootstrap"))
+	err := CollectArtifacts(ctx, bootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactFolder, bootstrapClusterProxy.GetName(), "bootstrap"), nil)
 	if err != nil {
 		fmt.Printf("Failed to artifacts for the bootstrap cluster: %v\n", err)
 		return
