@@ -32,6 +32,12 @@ func validateRBAC(ctx context.Context, cl client.Client, clusterName, clusterNam
 		return fmt.Errorf("failed to get admission request from context: %w", err)
 	}
 
+	if admissionRequest.UserInfo.Username == "system:serviceaccount:rancher-turtles-system:rancher-turtles-etcdsnapshotrestore-manager" {
+		// Permit turtles controller to operate on resources
+
+		return nil
+	}
+
 	sar := authv1.SubjectAccessReview{
 		Spec: authv1.SubjectAccessReviewSpec{
 			ResourceAttributes: &authv1.ResourceAttributes{
