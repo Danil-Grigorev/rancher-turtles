@@ -31,6 +31,7 @@ kubectl rollout status deployment coredns -n kube-system --timeout=90s
 helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
 helm repo add jetstack https://charts.jetstack.io
+helm repo add ngrok https://charts.ngrok.com
 helm repo update
 
 helm install cert-manager jetstack/cert-manager \
@@ -63,5 +64,16 @@ helm install rancher rancher-latest/rancher \
 	--wait
 
 kubectl rollout status deployment rancher -n cattle-system --timeout=180s
+
+helm upgrade ngrok ngrok/kubernetes-ingress-controller \
+	--install \
+	--wait \
+	--timeout 5m \
+	--set credentials.apiKey=$NGROK_API_KEY \
+	--set credentials.authtoken=$NGROK_AUTHTOKEN
+
+kubectl apply -f test/e2e/data/rancher/ingress-class-patch.yaml
+kubectl apply -f test/e2e/data/rancher/rancher-service-patch.yaml
+kubectl apply -f test/e2e/data/rancher/rancher-setting-patch.yaml
 
 tilt up
