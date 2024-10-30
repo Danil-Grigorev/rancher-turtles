@@ -7,8 +7,8 @@ scms:
     spec:
       user: turtles-bot
       email: turtles@suse.de
-      owner: rancher
-      repository: turtles
+      owner: Danil-Grigorev
+      repository: rancher-turtles
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       branch: main
