@@ -11,7 +11,7 @@ data:
     providers:
     # Cluster API core provider
     - name:         "cluster-api"
-      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.7.7/core-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.7.4/core-components.yaml"
       type:         "CoreProvider"
 
     # Infrastructure providers
