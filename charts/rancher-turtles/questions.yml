@@ -76,3 +76,9 @@ questions:
     type: boolean
     label: Seamless integration with Fleet and CAPI
     group: "Rancher Turtles Features Settings"
+  - variable: rancherTurtles.features.etcd-snapshot-restore.enabled
+    default: false
+    description: "Enable ETCD Snapshot/Restore functionality for CAPRKE2 clusters"
+    type: boolean
+    label: Enable ETCD Snapshot/Restore functionality for CAPRKE2 clusters
+    group: "Rancher Turtles Features Settings"
