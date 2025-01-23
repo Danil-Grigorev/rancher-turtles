@@ -8,11 +8,11 @@ on:
 concurrency: ci_e2e_tests
 
 jobs:
-  publish_e2e_image:
-    uses: ./.github/workflows/e2e-image-publish.yaml
-    secrets: inherit
+  # publish_e2e_image:
+  #   uses: ./.github/workflows/e2e-image-publish.yaml
+  #   secrets: inherit
   e2e_import_gitops_v3:
-    needs: publish_e2e_image
+    # needs: publish_e2e_image
     uses: ./.github/workflows/run-e2e-suite.yaml
     with:
       test_suite: test/e2e/suites/import-gitops-v3
@@ -22,7 +22,7 @@ jobs:
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_v2prov:
-    needs: publish_e2e_image
+    # needs: publish_e2e_image
     uses: ./.github/workflows/run-e2e-suite.yaml
     with:
       test_suite: test/e2e/suites/v2prov
