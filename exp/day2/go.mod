@@ -1,4 +1,4 @@
-module github.com/rancher/turtles/exp/day2
+module github.com/Danil-Grigorev/rancher-turtles/exp/day2
 
 go 1.23.9
 

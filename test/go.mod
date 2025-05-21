@@ -1,4 +1,4 @@
-module github.com/rancher/turtles/test
+module github.com/Danil-Grigorev/rancher-turtles/test
 
 go 1.23.9
 

@@ -1,4 +1,4 @@
-module github.com/rancher/turtles/examples
+module github.com/Danil-Grigorev/rancher-turtles/examples
 
 go 1.23.9
 
