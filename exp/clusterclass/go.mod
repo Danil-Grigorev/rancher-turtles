@@ -1,4 +1,4 @@
-module github.com/rancher/turtles/exp/clusterclass
+module github.com/Danil-Grigorev/rancher-turtles/exp/clusterclass
 
 go 1.23.9
 
